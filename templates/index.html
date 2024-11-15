@@ -8,10 +8,10 @@
 </head>
 <body>
     <div class="container my-5">
-        <h3 class="text-center">Language Learning Task Recommendation</h3>
-
+        <h3 class="mx-auto" style="max-width: 500px;">Learning Task Recommendation</h3>
+        <p class="mx-auto my-4" style="max-width: 500px;">Not sure what to do next in your language learning progress? Tell us the available time and skill level, and we’ll help you pick the best task!</p>
         <form id="taskForm">
-            <div class="form-group mx-auto my-5" style="max-width: 500px;">
+            <div class="form-group mx-auto my-4" style="max-width: 500px;">
                 <label for="timeAvailable">How much time do you have available today?</label>
                 <select id="timeAvailable" class="form-control">
                     <option value="">Select Time Available</option>
@@ -23,7 +23,7 @@
                 </select>
             </div>
 
-            <div class="form-group mx-auto my-5" style="max-width: 500px;">
+            <div class="form-group mx-auto my-4" style="max-width: 500px;">
                 <label for="proficiencyLevel">What level do you think is your language proficiency?</label>
                 <select id="proficiencyLevel" class="form-control">
                     <option value="">Select Proficiency Level</option>
@@ -39,7 +39,7 @@
             </div>
         </form>
 
-        <div id="taskRecommendation" class="alert alert-info d-none mx-auto mt-5" style="max-width: 500px;"></div>
+        <div id="taskRecommendation" class="alert alert-info d-none mx-auto mt-4" style="max-width: 500px;"></div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

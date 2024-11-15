@@ -90,9 +90,9 @@ def get_task():
     task_value = learning_sim.output['learning_task']
 
     task_mapping = {
-        1: "Talk about recent experiences, any special event that you attended, or something interesting you learned recently.",
-        2: "Read a short piece of text and summarize or discuss the main ideas in your own words.",
-        3: "Write a summary of something you came across recently, like a story, video, or event, and mention the main point of it.",
+        1: "Practice talking about any recent experience, special event you attended, or something interesting you learned.",
+        2: "Read a short piece of text and summarize the key points in your own words.",
+        3: "Write a description of something you came across recently, like a story or video, and explain why it stood out to you.",
         4: "Practice speaking with a native speaker or a friend and discuss a topic that challenges your language skills.",
         5: "Prepare a persuasive speech on a challenging topic and present or discuss reasons to support your perspective."
     }
