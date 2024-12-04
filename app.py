@@ -68,12 +68,42 @@ rules = [
 learning_ctrl = ctrl.ControlSystem(rules)
 learning_sim = ctrl.ControlSystemSimulation(learning_ctrl)
 
-# Return the main page
+# Task mapping
+task_mapping = {
+    'simple': [
+        "Practice introducing yourself and sharing a few facts about yourself.",
+        "Describe a typical day in your life and what you usually do.",
+        "Practice a short conversation about a simple topic."
+    ],
+    'easy': [
+        "Talk about a recent experience or special event you attended.",
+        "Pretend you need to ask for information. Practice what you would say.",
+        "Give simple instructions for completing a task or solving a problem."
+    ],
+    'standard': [
+        "Talk about your daily schedule and mention any times when it changes.",
+        "Describe a personal experience and highlight the best moments of it.",
+        "Pretend you’re planning a small event. Explain what it is and how you would organize it."
+    ],
+    'hard': [
+        "Discuss your opinion on a topic that interests you and explain your reasons in detail.",
+        "Talk about a significant event in your life and explain how it changed your perspective.",
+        "Compare and contrast two ideas, such as living in a city versus the countryside, and explain which you prefer and why."
+    ],
+    'complex': [
+        "Pretend you are hosting a Q&A session. Answer questions about a topic you are knowledgeable about in a clear and concise manner.",
+        "Analyze a fictional or real scenario, describe the problem, and propose a detailed solution with justifications.",
+        "Participate in a debate, and share your perspective about the topic."
+    ]
+}
+
+# Task index tracker for task rotation
+task_index_tracker = {key: 0 for key in task_mapping.keys()}
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Process input and return recommended task
 @app.route('/get_task', methods=['POST'])
 def get_task():
     time_available_value = int(request.form['timeAvailable'])
@@ -85,20 +115,41 @@ def get_task():
     learning_sim.input['time_available'] = time_available_value
     learning_sim.input['proficiency_level'] = proficiency_level_value
 
+    # Perform the simulation
     learning_sim.compute()
-
     task_value = learning_sim.output['learning_task']
 
-    task_mapping = {
-        1: "Practice talking about any recent experience, special event you attended, or something interesting you learned.",
-        2: "Read a short piece of text and summarize the key points in your own words.",
-        3: "Write a description of something you came across recently, like a story or video, and explain why it stood out to you.",
-        4: "Practice speaking with a native speaker or a friend and discuss a topic that challenges your language skills.",
-        5: "Prepare a persuasive speech on a challenging topic and present or discuss reasons to support your perspective."
+    # Calculate membership degrees for each task level
+    membership_degrees = {
+        level: fuzz.interp_membership(learning_task.universe, learning_task[level].mf, task_value)
+        for level in task_mapping.keys()
     }
 
-    task_id = int(np.round(task_value))
-    return jsonify({'task': task_id, 'taskDescription': task_mapping[task_id]})
+    # Ensure normalization to handle edge cases
+    total_degree = sum(membership_degrees.values())
+    if total_degree == 0:
+        return jsonify({'error': 'Unable to determine a task.'}), 500
+
+    probabilities = {level: degree / total_degree for level, degree in membership_degrees.items()}
+
+    # Select a task level probabilistically
+    selected_level = np.random.choice(
+        list(probabilities.keys()),
+        p=list(probabilities.values())
+    )
+
+    # Retrieve the task from the selected level and rotate
+    task_index = task_index_tracker[selected_level]
+    tasks = task_mapping[selected_level]
+    recommended_task = tasks[task_index]
+
+    # Update the rotation index
+    task_index_tracker[selected_level] = (task_index + 1) % len(tasks)
+
+    return jsonify({
+        'taskLevel': selected_level,
+        'taskDescription': recommended_task
+    })
 
 if __name__ == '__main__':
     app.run()
