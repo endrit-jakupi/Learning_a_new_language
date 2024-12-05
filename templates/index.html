@@ -48,6 +48,7 @@
             const timeAvailable = document.getElementById("timeAvailable").value;
             const proficiencyLevel = document.getElementById("proficiencyLevel").value;
             const taskDiv = document.getElementById("taskRecommendation");
+            const button = document.querySelector("button[onclick='getLearningTask()']");
 
             if (!timeAvailable || !proficiencyLevel) {
                 taskDiv.classList.remove("d-none");
@@ -58,6 +59,7 @@
             $.post('/get_task', {timeAvailable: timeAvailable, proficiencyLevel: proficiencyLevel}, function(data) {
                 taskDiv.classList.remove("d-none");
                 taskDiv.textContent = "Recommended Task: " + data.taskDescription;
+                button.textContent = "Change Learning Task";
             });
         }
     </script>
