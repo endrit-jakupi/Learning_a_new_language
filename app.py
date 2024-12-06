@@ -1,34 +1,39 @@
 import numpy as np
 import skfuzzy as fuzz
+import matplotlib
+import matplotlib.pyplot as plt
+import os
 from skfuzzy import control as ctrl
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
+matplotlib.use('Agg')
+
 # Define fuzzy logic variables
-time_available = ctrl.Antecedent(np.array([5, 10, 20, 30, 60]), 'time_available')
-proficiency_level = ctrl.Antecedent(np.arange(1, 6, 1), 'proficiency_level')
-learning_task = ctrl.Consequent(np.arange(1, 6, 1), 'learning_task')
+time_available = ctrl.Antecedent(np.arange(0, 51, 10), 'time_available')
+proficiency_level = ctrl.Antecedent(np.arange(0, 6, 1), 'proficiency_level')
+learning_task = ctrl.Consequent(np.arange(0, 6, 1), 'learning_task')
 
 # Define membership functions for time available
-time_available['minimal'] = fuzz.trimf(time_available.universe, [5, 5, 10])
-time_available['short'] = fuzz.trimf(time_available.universe, [5, 10, 20])
-time_available['moderate'] = fuzz.trimf(time_available.universe, [10, 20, 30])
-time_available['consistent'] = fuzz.trimf(time_available.universe, [20, 30, 60])
-time_available['intensive'] = fuzz.trimf(time_available.universe, [30, 60, 60])
+time_available['minimal'] = fuzz.trimf(time_available.universe, [0, 10, 10])
+time_available['short'] = fuzz.trimf(time_available.universe, [10, 20, 20])
+time_available['moderate'] = fuzz.trimf(time_available.universe, [20, 30, 30])
+time_available['consistent'] = fuzz.trimf(time_available.universe, [30, 40, 40])
+time_available['intensive'] = fuzz.trimf(time_available.universe, [40, 50, 50]) 
 
 # Define membership functions for proficiency level
-proficiency_level['starter'] = fuzz.trimf(proficiency_level.universe, [1, 1, 2])
-proficiency_level['beginner'] = fuzz.trimf(proficiency_level.universe, [1, 2, 3])
-proficiency_level['intermediate'] = fuzz.trimf(proficiency_level.universe, [2, 3, 4])
-proficiency_level['proficient'] = fuzz.trimf(proficiency_level.universe, [3, 4, 5])
+proficiency_level['starter'] = fuzz.trimf(proficiency_level.universe, [0, 1, 1])
+proficiency_level['beginner'] = fuzz.trimf(proficiency_level.universe, [1, 2, 2])
+proficiency_level['intermediate'] = fuzz.trimf(proficiency_level.universe, [2, 3, 3])
+proficiency_level['proficient'] = fuzz.trimf(proficiency_level.universe, [3, 4, 4])
 proficiency_level['advanced'] = fuzz.trimf(proficiency_level.universe, [4, 5, 5])
 
 # Define membership functions for learning task
-learning_task['simple'] = fuzz.trimf(learning_task.universe, [1, 1, 2])
-learning_task['easy'] = fuzz.trimf(learning_task.universe, [1, 2, 3])
-learning_task['standard'] = fuzz.trimf(learning_task.universe, [2, 3, 4])
-learning_task['hard'] = fuzz.trimf(learning_task.universe, [3, 4, 5])
+learning_task['simple'] = fuzz.trimf(learning_task.universe, [0, 1, 1])
+learning_task['easy'] = fuzz.trimf(learning_task.universe, [1, 2, 2])
+learning_task['standard'] = fuzz.trimf(learning_task.universe, [2, 3, 3])
+learning_task['hard'] = fuzz.trimf(learning_task.universe, [3, 4, 4])
 learning_task['complex'] = fuzz.trimf(learning_task.universe, [4, 5, 5])
 
 # Define fuzzy rules for task recommendation
@@ -109,47 +114,76 @@ def get_task():
     time_available_value = int(request.form['timeAvailable'])
     proficiency_level_value = int(request.form['proficiencyLevel'])
 
-    if time_available_value not in [5, 10, 20, 30, 60] or proficiency_level_value not in [1, 2, 3, 4, 5]:
+    # Map the inputs to fuzzy sets
+    time_available_mapping = {10: 'minimal', 20: 'short', 30: 'moderate', 40: 'consistent', 50: 'intensive'}
+    proficiency_level_mapping = {1: 'starter', 2: 'beginner', 3: 'intermediate', 4: 'proficient', 5: 'advanced'}
+
+    if time_available_value not in time_available_mapping or proficiency_level_value not in proficiency_level_mapping:
         return jsonify({'error': 'Invalid input values'}), 400
 
-    learning_sim.input['time_available'] = time_available_value
-    learning_sim.input['proficiency_level'] = proficiency_level_value
+    # Set the inputs in the simulation
+    learning_sim.input['time_available'] = time_available_mapping[time_available_value]
+    learning_sim.input['proficiency_level'] = proficiency_level_mapping[proficiency_level_value]
 
-    # Perform the simulation
     learning_sim.compute()
+
     task_value = learning_sim.output['learning_task']
+    selected_level = round(task_value)  # Round to the closest integer for simplicity
 
-    # Calculate membership degrees for each task level
-    membership_degrees = {
-        level: fuzz.interp_membership(learning_task.universe, learning_task[level].mf, task_value)
-        for level in task_mapping.keys()
-    }
+    # Retrieve the tasks from the selected level
+    selected_level_str = list(task_mapping.keys())[selected_level - 1] 
+    tasks = task_mapping[selected_level_str] 
 
-    # Ensure normalization to handle edge cases
-    total_degree = sum(membership_degrees.values())
-    if total_degree == 0:
-        return jsonify({'error': 'Unable to determine a task.'}), 500
+    if selected_level_str not in task_index_tracker:
+        task_index_tracker[selected_level_str] = 0
 
-    probabilities = {level: degree / total_degree for level, degree in membership_degrees.items()}
-
-    # Select a task level probabilistically
-    selected_level = np.random.choice(
-        list(probabilities.keys()),
-        p=list(probabilities.values())
-    )
-
-    # Retrieve the task from the selected level and rotate
-    task_index = task_index_tracker[selected_level]
-    tasks = task_mapping[selected_level]
+    task_index = task_index_tracker[selected_level_str]
     recommended_task = tasks[task_index]
 
-    # Update the rotation index
-    task_index_tracker[selected_level] = (task_index + 1) % len(tasks)
+    task_index_tracker[selected_level_str] = (task_index + 1) % len(tasks) 
 
     return jsonify({
-        'taskLevel': selected_level,
-        'taskDescription': recommended_task
+        'taskLevel': selected_level_str,
+        'taskDescription': recommended_task,
+        'buttonText': 'Change Task'
     })
+
+@app.route('/visualizations')
+def visualizations():
+    # Directory to save static plots
+    static_dir = os.path.join(os.getcwd(), 'static')
+    os.makedirs(static_dir, exist_ok=True)
+
+    # Generate and save the plots
+    # Plot time_available
+    plt.figure()
+    for label in time_available.terms:
+        plt.plot(time_available.universe, time_available[label].mf, label=label)
+    plt.title("Time Available Membership Functions")
+    plt.legend()
+    plt.savefig(os.path.join(static_dir, 'time_available.png'))
+    plt.close()
+
+    # Plot proficiency_level
+    plt.figure()
+    for label in proficiency_level.terms:
+        plt.plot(proficiency_level.universe, proficiency_level[label].mf, label=label)
+    plt.title("Proficiency Level Membership Functions")
+    plt.legend()
+    plt.savefig(os.path.join(static_dir, 'proficiency_level.png'))
+    plt.close()
+
+    # Plot learning_task
+    plt.figure()
+    for label in learning_task.terms:
+        plt.plot(learning_task.universe, learning_task[label].mf, label=label)
+    plt.title("Learning Task Membership Functions")
+    plt.legend()
+    plt.savefig(os.path.join(static_dir, 'learning_task.png'))
+    plt.close()
+
+    # Render the template with static paths
+    return render_template('visualizations.html')
 
 if __name__ == '__main__':
     app.run()
