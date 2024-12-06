@@ -11,30 +11,30 @@ app = Flask(__name__)
 matplotlib.use('Agg')
 
 # Define fuzzy logic variables
-time_available = ctrl.Antecedent(np.arange(0, 51, 10), 'time_available')
+time_available = ctrl.Antecedent(np.arange(0, 51, 1), 'time_available')
 proficiency_level = ctrl.Antecedent(np.arange(0, 6, 1), 'proficiency_level')
 learning_task = ctrl.Consequent(np.arange(0, 6, 1), 'learning_task')
 
 # Define membership functions for time available
-time_available['minimal'] = fuzz.trimf(time_available.universe, [0, 10, 10])
-time_available['short'] = fuzz.trimf(time_available.universe, [10, 20, 20])
-time_available['moderate'] = fuzz.trimf(time_available.universe, [20, 30, 30])
-time_available['consistent'] = fuzz.trimf(time_available.universe, [30, 40, 40])
-time_available['intensive'] = fuzz.trimf(time_available.universe, [40, 50, 50]) 
+time_available['minimal'] = fuzz.trimf(time_available.universe, [0, 10, 20])
+time_available['short'] = fuzz.trimf(time_available.universe, [10, 20, 30])
+time_available['moderate'] = fuzz.trimf(time_available.universe, [20, 30, 40])
+time_available['consistent'] = fuzz.trimf(time_available.universe, [30, 40, 50])
+time_available['intensive'] = fuzz.trimf(time_available.universe, [40, 50, 51])
 
 # Define membership functions for proficiency level
-proficiency_level['starter'] = fuzz.trimf(proficiency_level.universe, [0, 1, 1])
-proficiency_level['beginner'] = fuzz.trimf(proficiency_level.universe, [1, 2, 2])
-proficiency_level['intermediate'] = fuzz.trimf(proficiency_level.universe, [2, 3, 3])
-proficiency_level['proficient'] = fuzz.trimf(proficiency_level.universe, [3, 4, 4])
-proficiency_level['advanced'] = fuzz.trimf(proficiency_level.universe, [4, 5, 5])
+proficiency_level['starter'] = fuzz.trimf(proficiency_level.universe, [0, 1, 2])
+proficiency_level['beginner'] = fuzz.trimf(proficiency_level.universe, [1, 2, 3])
+proficiency_level['intermediate'] = fuzz.trimf(proficiency_level.universe, [2, 3, 4])
+proficiency_level['proficient'] = fuzz.trimf(proficiency_level.universe, [3, 4, 5])
+proficiency_level['advanced'] = fuzz.trimf(proficiency_level.universe, [4, 5, 6])
 
 # Define membership functions for learning task
-learning_task['simple'] = fuzz.trimf(learning_task.universe, [0, 1, 1])
-learning_task['easy'] = fuzz.trimf(learning_task.universe, [1, 2, 2])
-learning_task['standard'] = fuzz.trimf(learning_task.universe, [2, 3, 3])
-learning_task['hard'] = fuzz.trimf(learning_task.universe, [3, 4, 4])
-learning_task['complex'] = fuzz.trimf(learning_task.universe, [4, 5, 5])
+learning_task['simple'] = fuzz.trimf(learning_task.universe, [0, 1, 2])
+learning_task['easy'] = fuzz.trimf(learning_task.universe, [1, 2, 3])
+learning_task['standard'] = fuzz.trimf(learning_task.universe, [2, 3, 4])
+learning_task['hard'] = fuzz.trimf(learning_task.universe, [3, 4, 5])
+learning_task['complex'] = fuzz.trimf(learning_task.universe, [4, 5, 6])
 
 # Define fuzzy rules for task recommendation
 rules = [
