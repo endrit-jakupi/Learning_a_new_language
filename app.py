@@ -1,6 +1,12 @@
 from flask import Flask, render_template, request, jsonify
-from main.definitions import get_fuzzy_controller, time_available, proficiency_level, learning_task
-from main.tasks import get_task, task_mapping
+from main.definitions import (
+    get_fuzzy_controller, 
+    time_available, 
+    proficiency_level, 
+    learning_task, 
+    get_task, 
+    task_mapping
+)
 import matplotlib.pyplot as plt
 import matplotlib
 import os
