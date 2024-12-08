@@ -47,6 +47,22 @@
         </form>
 
         <div id="taskRecommendation" class="alert alert-info d-none mx-auto mt-4" style="max-width: 500px;"></div>
+
+        <div id="taskFeedback" class="d-none mx-auto mt-4" style="max-width: 500px;">
+            <form id="feedbackForm">
+                <div class="form-group">
+                    <label for="feedbackRating">How was the task recommended?</label>
+                    <select id="feedbackRating" name="feedback_rating" class="form-control" required>
+                        <option value="">Select an option</option>
+                        <option value="Very Helpful">Very Helpful</option>
+                        <option value="Somewhat Helpful">Somewhat Helpful</option>
+                        <option value="Not Helpful">Not Helpful</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary mt-2" onclick="submitFeedback()">Submit Feedback</button>
+                <div id="feedbackSuccess" class="alert alert-info d-none mx-auto mt-4" style="max-width: 500px;"></div>
+            </form>
+        </div>           
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -55,18 +71,55 @@
             const timeAvailable = document.getElementById("timeAvailable").value;
             const proficiencyLevel = document.getElementById("proficiencyLevel").value;
             const taskDiv = document.getElementById("taskRecommendation");
-            const button = document.querySelector("button[onclick='getLearningTask()']");
+            const feedbackDiv = document.getElementById("taskFeedback");
+            const button = document.querySelector("button[onclick='getLearningTask()']"); // Select the button
 
             if (!timeAvailable || !proficiencyLevel) {
                 taskDiv.classList.remove("d-none");
                 taskDiv.textContent = "Please choose both Time Available and Proficiency Level.";
+                feedbackDiv.classList.add("d-none");
                 return;
             }
 
-            $.post('/get_task', {timeAvailable: timeAvailable, proficiencyLevel: proficiencyLevel}, function(data) {
+            $.post('/get_task', { timeAvailable, proficiencyLevel }, function(data) {
                 taskDiv.classList.remove("d-none");
                 taskDiv.textContent = "Recommended Task: " + data.taskDescription;
+
+                feedbackDiv.classList.remove("d-none");
+
                 button.textContent = "Change Learning Task";
+            }).fail(function() {
+                taskDiv.classList.remove("d-none");
+                taskDiv.textContent = "An error occurred while fetching the recommended task.";
+                feedbackDiv.classList.add("d-none");
+            });
+        }
+
+        function submitFeedback() {
+            const taskDescription = document
+                .getElementById("taskRecommendation")
+                .textContent.replace("Recommended Task: ", "")
+                .trim();
+            const feedbackRating = document.getElementById("feedbackRating").value;
+            const feedbackSuccessDiv = document.getElementById("feedbackSuccess");
+
+            if (!feedbackRating) {
+                alert("Please select a feedback rating before submitting.");
+                return;
+            }
+
+            $.post(
+                "/submit_feedback",
+                { task_description: taskDescription, feedback_rating: feedbackRating },
+                function (data) {
+                    feedbackSuccessDiv.classList.remove("d-none");
+                    feedbackSuccessDiv.textContent = "Feedback submitted successfully!";
+                    document.getElementById("feedbackForm").reset();
+                }
+            ).fail(function () {
+                feedbackSuccessDiv.classList.remove("d-none");
+                feedbackSuccessDiv.classList.add("alert-danger");
+                feedbackSuccessDiv.textContent = "An error occurred while submitting your feedback.";
             });
         }
     </script>

@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from main.definitions import (
+from main.fuzzy_system import (
     get_fuzzy_controller, 
     time_available, 
     proficiency_level, 
@@ -7,11 +7,20 @@ from main.definitions import (
     get_task, 
     task_mapping
 )
+from database.models import Feedback
+from database.connection import db, migrate
 import matplotlib.pyplot as plt
 import matplotlib
 import os
 
 app = Flask(__name__)
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://user_feedback_df6m_user:NwP2UuliOhxXSfqcO7fcaXDzBlDED43q@dpg-ctapq18gph6c73er5ij0-a.oregon-postgres.render.com/user_feedback_df6m'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db.init_app(app)
+migrate.init_app(app, db)
 
 matplotlib.use('Agg')
 
@@ -45,13 +54,32 @@ def get_task_route():
         'taskDescription': task
     })
 
+@app.route('/submit_feedback', methods=['POST'])
+def submit_feedback():
+    task_description = request.form['task_description']
+    feedback_rating = request.form['feedback_rating']
+
+    if not task_description or not feedback_rating:
+        return jsonify({'error': 'Task and feedback rating are required.'}), 400
+
+    try:
+        new_feedback = Feedback(
+            task_description=task_description,
+            feedback_rating=feedback_rating
+        )
+        db.session.add(new_feedback)
+        db.session.commit()
+
+        return jsonify({'status': 'success', 'message': 'Thank you for your feedback!'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/visualizations')
 def visualizations():
     # Directory to save static plots
     static_dir = os.path.join(os.getcwd(), 'static')
     os.makedirs(static_dir, exist_ok=True)
 
-    # Generate and save the plots
     # Plot time_available
     plt.figure()
     for label in time_available.terms:
@@ -79,7 +107,6 @@ def visualizations():
     plt.savefig(os.path.join(static_dir, 'learning_task.png'))
     plt.close()
 
-    # Render the template with static paths
     return render_template('visualizations.html')
 
 if __name__ == '__main__':
